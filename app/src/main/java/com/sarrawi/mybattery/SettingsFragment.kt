@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.MediaPlayer
+import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -32,6 +33,10 @@ class SettingsFragment : Fragment() {
     private lateinit var prefs: android.content.SharedPreferences
 
     private var pendingRequestCodeForSound: Int? = null // لتخزين أي اختيار صوت بعد الموافقة على الصلاحية
+
+
+    private val PICK_LOW_SYSTEM_SOUND = 102
+    private val PICK_HIGH_SYSTEM_SOUND = 103
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -59,7 +64,7 @@ class SettingsFragment : Fragment() {
         }
     }
 
-    private fun showSoundChoiceDialog(isLowSound: Boolean) {
+    private fun showSoundChoiceDialog2(isLowSound: Boolean) {
         val options = arrayOf("استخدام الصوت الافتراضي", "اختيار ملف صوت خارجي")
 
         AlertDialog.Builder(requireContext())
@@ -76,6 +81,76 @@ class SettingsFragment : Fragment() {
                 }
             }
             .show()
+    }
+
+    private fun showSoundChoiceDialog(isLowSound: Boolean) {
+        val options = arrayOf("استخدام الصوت الافتراضي", "اختيار نغمة من النظام", "اختيار ملف صوت خارجي")
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("اختر مصدر الصوت")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> setDefaultRawSound(requireContext(), isLowSound)
+                    1 -> {
+                        val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+                            putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION)
+                            putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "اختر نغمة")
+                            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
+                            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+
+                            val uriStr = prefs.getString(
+                                if (isLowSound) "low_sound_uri" else "high_sound_uri", null
+                            )
+                            if (uriStr != null) {
+                                putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, Uri.parse(uriStr))
+                            }
+                        }
+                        val requestCode = if (isLowSound) PICK_LOW_SYSTEM_SOUND else PICK_HIGH_SYSTEM_SOUND
+                        startActivityForResult(intent, requestCode)
+                    }
+                    2 -> {
+                        val requestCode = if (isLowSound) PICK_LOW_SOUND else PICK_HIGH_SOUND
+                        checkStoragePermissionThenPick(requestCode)
+                    }
+                }
+            }
+            .show()
+    }
+
+    private fun setDefaultRawSound(context: Context, isLowSound: Boolean) {
+        val defaultUriString = if (isLowSound) {
+            "android.resource://${context.packageName}/${R.raw.lowbattery}"
+        } else {
+            "android.resource://${context.packageName}/${R.raw.lowbattery}"
+        }
+
+        val editor = prefs.edit()
+        if (isLowSound) {
+            editor.putString("low_sound_uri", defaultUriString)
+            binding.txtLowSoundPath.text = "الصوت الافتراضي"
+        } else {
+            editor.putString("high_sound_uri", defaultUriString)
+            binding.txtHighSoundPath.text = "الصوت الافتراضي"
+        }
+        editor.apply()
+
+        // تشغيل الصوت مباشرة
+        try {
+            val afd = context.resources.openRawResourceFd(R.raw.lowbattery) ?: return
+            val mediaPlayer = MediaPlayer()
+            mediaPlayer.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build()
+            )
+            mediaPlayer.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+            afd.close()
+            mediaPlayer.prepare()
+            mediaPlayer.start()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun setDefaultSound(isLowSound: Boolean) {
@@ -158,24 +233,40 @@ class SettingsFragment : Fragment() {
         super.onActivityResult(requestCode, resultCode, data)
 
         if (resultCode == Activity.RESULT_OK && data != null) {
-            val uri: Uri? = data.data
-            if (uri != null) {
-                // ✅ احصل على صلاحية دائمة للـ URI
-                val flags = data.flags and (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-                requireContext().contentResolver.takePersistableUriPermission(uri, flags)
-
-                val editor = prefs.edit()
-                when (requestCode) {
-                    PICK_LOW_SOUND -> {
-                        editor.putString("low_sound_uri", uri.toString())
-                        binding.txtLowSoundPath.text = uri.toString()
-                    }
-                    PICK_HIGH_SOUND -> {
-                        editor.putString("high_sound_uri", uri.toString())
-                        binding.txtHighSoundPath.text = uri.toString()
+            when (requestCode) {
+                PICK_LOW_SYSTEM_SOUND, PICK_HIGH_SYSTEM_SOUND -> {
+                    val uri: Uri? = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+                    if (uri != null) {
+                        val editor = prefs.edit()
+                        if (requestCode == PICK_LOW_SYSTEM_SOUND) {
+                            editor.putString("low_sound_uri", uri.toString())
+                            binding.txtLowSoundPath.text = "نغمة النظام: ${getRingtoneTitle(uri)}"
+                        } else {
+                            editor.putString("high_sound_uri", uri.toString())
+                            binding.txtHighSoundPath.text = "نغمة النظام: ${getRingtoneTitle(uri)}"
+                        }
+                        editor.apply()
                     }
                 }
-                editor.apply()
+
+                PICK_LOW_SOUND, PICK_HIGH_SOUND -> {
+                    val uri: Uri? = data.data
+                    if (uri != null) {
+                        val flags = data.flags and
+                                (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                        requireContext().contentResolver.takePersistableUriPermission(uri, flags)
+
+                        val editor = prefs.edit()
+                        if (requestCode == PICK_LOW_SOUND) {
+                            editor.putString("low_sound_uri", uri.toString())
+                            binding.txtLowSoundPath.text = uri.toString()
+                        } else {
+                            editor.putString("high_sound_uri", uri.toString())
+                            binding.txtHighSoundPath.text = uri.toString()
+                        }
+                        editor.apply()
+                    }
+                }
             }
         }
     }
@@ -186,6 +277,10 @@ class SettingsFragment : Fragment() {
             type = "audio/*"
         }
         startActivityForResult(intent, requestCode)
+    }
+
+    private fun getRingtoneTitle(uri: Uri): String {
+        return RingtoneManager.getRingtone(requireContext(), uri)?.getTitle(requireContext()) ?: "نغمة غير معروفة"
     }
 
     override fun onDestroyView() {

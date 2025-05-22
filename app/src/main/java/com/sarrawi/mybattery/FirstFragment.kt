@@ -145,10 +145,7 @@ class FirstFragment : Fragment() {
             binding.txtLowBatteryLimit.text = "$it%"
         }
 
-        binding.switchRootControl.isChecked = viewModel.useRootControl.value ?: false
-        binding.switchRootControl.setOnCheckedChangeListener { _, isChecked ->
-            viewModel.setUseRootControl(isChecked)
-        }
+
 
         // WorkManager job
         val constraints = Constraints.Builder()
@@ -169,31 +166,14 @@ class FirstFragment : Fragment() {
             findNavController().navigate(R.id.action_FirstFragment_to_settingsFragment)
         }
 
-        setupMenu()
+
     }
 
     private fun updateButtonText(isRunning: Boolean) {
         binding.btnStartService.text = if (isRunning) "إيقاف الخدمة" else "بدء الخدمة"
     }
 
-    private fun setupMenu() {
-        val menuHost: MenuHost = requireActivity()
-        menuHost.addMenuProvider(object : MenuProvider {
-            override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
-                inflater.inflate(R.menu.menu_main, menu)
-            }
 
-            override fun onMenuItemSelected(item: MenuItem): Boolean {
-                return when (item.itemId) {
-                    R.id.action_settings -> {
-                        findNavController().navigate(R.id.action_FirstFragment_to_settingsFragment)
-                        true
-                    }
-                    else -> false
-                }
-            }
-        }, viewLifecycleOwner, Lifecycle.State.RESUMED)
-    }
 
     private fun updateBatteryIcon(level: Int, isCharging: Boolean) {
         val iconRes = when {

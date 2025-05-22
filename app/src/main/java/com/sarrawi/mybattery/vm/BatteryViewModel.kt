@@ -14,7 +14,6 @@ class BatteryViewModel(private val context: Context) : ViewModel() {
 
     val chargeLimit = MutableLiveData(prefs.getInt("chargeLimit", 80))
     val lowBatteryLimit = MutableLiveData(prefs.getInt("lowBatteryLimit", 20))
-    val useRootControl = MutableLiveData(prefs.getBoolean("useRootControl", false))
 
     private val _notifyHigh = MutableLiveData(prefs.getBoolean("notifyHigh", false))
     val notifyHigh: LiveData<Boolean> get() = _notifyHigh
@@ -44,10 +43,7 @@ class BatteryViewModel(private val context: Context) : ViewModel() {
         savePreference("lowBatteryLimit", value)
     }
 
-    fun setUseRootControl(value: Boolean) {
-        useRootControl.value = value
-        savePreference("useRootControl", value)
-    }
+
 
     fun setNotifyHigh(value: Boolean) {
         _notifyHigh.value = value
