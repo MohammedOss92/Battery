@@ -9,6 +9,9 @@ import com.sarrawi.mybattery.service.BatteryService
 
 
 
+//الكود الذي أرسلته هو BootReceiver، وهو مسؤول عن تشغيل خدمة BatteryService تلقائيًا عند إقلاع الجهاز.
+//
+//لأنك طلبت "حذف root"، فأحب أوضح:
     class BootReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent?) {
             if (intent?.action == Intent.ACTION_BOOT_COMPLETED) {
