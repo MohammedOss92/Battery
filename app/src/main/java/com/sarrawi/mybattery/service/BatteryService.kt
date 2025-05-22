@@ -31,6 +31,9 @@ class BatteryService : Service(), BatteryReceiver.BatteryListener {
     }
 
     // إنشاء إشعار Foreground
+    //يُظهر إشعار دائم بأن خدمة مراقبة البطارية تعمل.
+    //
+    //يتم إنشاء NotificationChannel عند وجود أندرويد 8.0 فأعلى.
     private fun createNotification(): Notification {
         val channelId = "battery_channel"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -51,7 +54,21 @@ class BatteryService : Service(), BatteryReceiver.BatteryListener {
 
 
 
-
+    //إذا كانت الجهاز يشحن ونسبة البطارية ≥ الحد الأعلى:
+    //
+    //إرسال إشعار: "افصل الشاحن".
+    //
+    //تنفيذ أمر ADB لفصل الشحن إن كانت صلاحيات الروت مفعلة.
+    //
+    //تشغيل صوت مخصص عند الامتلاء.
+    //
+    //إذا كانت الجهاز غير موصول بالشاحن ونسبة البطارية ≤ الحد الأدنى:
+    //
+    //إرسال إشعار: "البطارية منخفضة".
+    //
+    //تشغيل صوت مخصص.
+    //
+    //فتح إعدادات توفير البطارية تلقائيًا.
     override fun onBatteryChanged(level: Int, isCharging: Boolean) {
         val prefs = getSharedPreferences("BatteryPrefs", Context.MODE_PRIVATE)
 
@@ -64,7 +81,7 @@ class BatteryService : Service(), BatteryReceiver.BatteryListener {
 
         if (isCharging && level >= chargeLimit) {
             sendNotificationWithAction("افصل الشاحن، وصلت النسبة المحددة $level%")
-            if (rootEnabled) executeAdbCommand()
+
             playCustomSound(isMax = true)
         } else if (!isCharging && level <= lowLimit) {
             // إشعار واضح مع دعوة لتفعيل توفير الطاقة
@@ -81,14 +98,7 @@ class BatteryService : Service(), BatteryReceiver.BatteryListener {
     }
 
 
-    // أمر ADB يفصل الشاحن (تجريبي – يتطلب صلاحيات Root)
-    private fun executeAdbCommand() {
-        try {
-            Runtime.getRuntime().exec(arrayOf("su", "-c", "echo 0 > /sys/class/power_supply/battery/charging_enabled"))
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
+
 
     override fun onDestroy() {
         super.onDestroy()
@@ -99,6 +109,15 @@ class BatteryService : Service(), BatteryReceiver.BatteryListener {
         return null
     }
 
+
+
+    //كلا الدالتين ترسل إشعار للمستخدم:
+    //
+    //عند الشحن الزائد.
+    //
+    //عند البطارية المنخفضة.
+    //
+    //الإشعار يحتوي على إجراء لفتح إعدادات البطارية.
     private fun sendNotification(message: String) {
         val channelId = "battery_alerts"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -159,6 +178,11 @@ class BatteryService : Service(), BatteryReceiver.BatteryListener {
 
 
 
+    //التأكد من أن النظام لا يقوم بتقييد البطارية على التطبيق.
+    //
+    //تشغيل الخدمة في Foreground.
+    //
+    //طلب تجاهل تحسينات البطارية Battery Optimizations.
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -198,6 +222,8 @@ class BatteryService : Service(), BatteryReceiver.BatteryListener {
 //
 //        startForeground(1, notification)
 //    }
+
+    //تشغيل الخدمة مع إشعار مخفي لا يظهر للمستخدم، لكن النظام لا يوقفها.
     private fun startForegroundServiceWithNotification() {
         val channelId = "battery_service"
 
@@ -228,6 +254,7 @@ class BatteryService : Service(), BatteryReceiver.BatteryListener {
     }
 
 
+    //يطلب من المستخدم استثناء التطبيق من Battery Optimizations لضمان عمل الخدمة دومًا.
     private fun requestIgnoreBatteryOptimizations() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -250,6 +277,9 @@ class BatteryService : Service(), BatteryReceiver.BatteryListener {
         )
     }
 
+    //يشغّل صوت خاص عند وصول البطارية للحد الأعلى أو الأدنى.
+    //
+    //يتم جلب الصوت من SharedPreferences.
     private fun playCustomSound(isMax: Boolean) {
         val prefs = getSharedPreferences("battery_settings", Context.MODE_PRIVATE)
         val uriString = if (isMax) {
