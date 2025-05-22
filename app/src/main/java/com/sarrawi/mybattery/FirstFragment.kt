@@ -29,6 +29,16 @@ class FirstFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var viewModel: BatteryViewModel
+
+    //تعريف BroadcastReceiver داخلي (anonymous class) يستقبل تحديثات حالة البطارية من النظام.
+    //
+    //في onReceive:
+    //
+    //يأخذ مستوى البطارية الحالي.
+    //
+    //يأخذ حالة الشحن (هل يشحن أو ممتلئ).
+    //
+    //يستدعي دالة updateBatteryIcon لتحديث واجهة المستخدم.
     private val batteryReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
@@ -53,11 +63,28 @@ class FirstFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val context = requireContext()
+
+        //تحميل ملفي SharedPreferences لحفظ واسترجاع الإعدادات الخاصة بالبطارية.
+        //
+        //kotlin
+        //Copy
+        //Edit
         val sharedPrefs = context.getSharedPreferences("BatteryPrefs", Context.MODE_PRIVATE)
         val settingsPrefs = context.getSharedPreferences("battery_settings", Context.MODE_PRIVATE)
 
+        //تسجيل الـ batteryReceiver ليستقبل تحديثات البطارية تلقائيًا.
+        //
+        //kotlin
+        //Copy
+        //Edit
         requireContext().registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
 
+
+        //قراءة القيم المحفوظة من SharedPreferences:
+        //
+        //min_level و max_level هما حدود التنبيه لبطارية منخفضة وعالية.
+        //
+        //notifyLow و notifyHigh هل يجب إرسال إشعارات لهذه الحالات.
         val savedMin = settingsPrefs.getInt("min_level", 20)
         val savedMax = settingsPrefs.getInt("max_level", 80)
         val notifyLow = sharedPrefs.getBoolean("notifyLow", false)
@@ -68,6 +95,7 @@ class FirstFragment : Fragment() {
             BatteryViewModelFactory(context.applicationContext)
         )[BatteryViewModel::class.java]
 
+        //تحديث الـ ViewModel بالقيم المحفوظة.
         viewModel.setLowBatteryLimit(savedMin)
         viewModel.setChargeLimit(savedMax)
         viewModel.setNotifyLow(notifyLow)
@@ -78,6 +106,7 @@ class FirstFragment : Fragment() {
         binding.switchNotifyLow.isChecked = notifyLow
         binding.switchNotifyHigh.isChecked = notifyHigh
 
+        //تحديث القيم في SharedPreferences و ViewModel عند تغير حالة مفاتيح الإشعارات.
         binding.switchNotifyLow.setOnCheckedChangeListener { _, checked ->
             sharedPrefs.edit().putBoolean("notifyLow", checked).apply()
             viewModel.setNotifyLow(checked)
@@ -87,6 +116,12 @@ class FirstFragment : Fragment() {
             viewModel.setNotifyHigh(checked)
         }
 
+
+        //ضبط شريط التمرير (SeekBar) الخاص بأعلى مستوى شحن.
+        //
+        //تحديث النص الذي يظهر بجانبه.
+        //
+        //حفظ القيمة عند توقف المستخدم عن التغيير.
         binding.seekBarChargeLimit.progress = savedMax
         binding.txtChargeLimit.text = "$savedMax%"
         binding.seekBarChargeLimit.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -113,9 +148,25 @@ class FirstFragment : Fragment() {
             }
         })
 
+
+
+        //قراءة حالة تشغيل الخدمة من SharedPreferences.
+        //
+        //تحديث نص الزر حسب الحالة.
         var isServiceRunning = sharedPrefs.getBoolean("service_enabled", false)
         updateButtonText(isServiceRunning)
 
+        //عند الضغط على الزر:
+        //
+        //عكس حالة الخدمة (تشغيل/إيقاف).
+        //
+        //حفظ الحالة.
+        //
+        //تشغيل الخدمة (ForegroundService إذا أندرويد 8 أو أعلى).
+        //
+        //إظهار رسالة Toast.
+        //
+        //تحديث نص الزر.
         binding.btnStartService.setOnClickListener {
             isServiceRunning = !isServiceRunning
             sharedPrefs.edit().putBoolean("service_enabled", isServiceRunning).apply()
@@ -135,6 +186,8 @@ class FirstFragment : Fragment() {
             updateButtonText(isServiceRunning)
         }
 
+
+        //هذه المراقبات تجعل الواجهة تتغير تلقائياً إذا تم تحديث القيم في ViewModel
         viewModel.chargeLimit.observe(viewLifecycleOwner) {
             binding.seekBarChargeLimit.progress = it
             binding.txtChargeLimit.text = "$it%"
@@ -175,6 +228,9 @@ class FirstFragment : Fragment() {
 
 
 
+    //تحدد صورة البطارية المناسبة حسب نسبة الشحن وحالة الشحن.
+    //
+    //تُحدث النص بجانب الأيقونة لعرض مستوى البطارية.
     private fun updateBatteryIcon(level: Int, isCharging: Boolean) {
         val iconRes = when {
             isCharging -> R.drawable.battery_full
