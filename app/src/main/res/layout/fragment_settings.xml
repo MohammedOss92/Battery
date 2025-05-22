@@ -1,0 +1,48 @@
+<!-- res/layout/fragment_settings.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:text="اختر صوت التنبيه للحد الأدنى"
+        android:textSize="18sp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/btnPickLowSound"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="اختيار ملف صوتي للحد الأدنى" />
+
+    <TextView
+        android:id="@+id/txtLowSoundPath"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="لم يتم اختيار أي ملف"
+        android:padding="8dp" />
+
+    <View android:layout_height="20dp" android:layout_width="match_parent"/>
+
+    <TextView
+        android:text="اختر صوت التنبيه للحد الأعلى"
+        android:textSize="18sp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/btnPickHighSound"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="اختيار ملف صوتي للحد الأعلى" />
+
+    <TextView
+        android:id="@+id/txtHighSoundPath"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="لم يتم اختيار أي ملف"
+        android:padding="8dp" />
+
+</LinearLayout>
