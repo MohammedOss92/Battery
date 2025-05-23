@@ -153,25 +153,6 @@ class SettingsFragment : Fragment() {
         }
     }
 
-    private fun setDefaultSound(isLowSound: Boolean) {
-        val defaultUriString = if (isLowSound) {
-            // URI خاص بالصوت الافتراضي
-            // سنستخدم هنا Uri "android.resource://" لبناء رابط للصوت في res/raw
-            "android.resource://${requireContext().packageName}/${R.raw.lowbattery}"
-        } else {
-            "android.resource://${requireContext().packageName}/${R.raw.lowbattery}"
-        }
-
-        val editor = prefs.edit()
-        if (isLowSound) {
-            editor.putString("low_sound_uri", defaultUriString)
-            binding.txtLowSoundPath.text = "الصوت الافتراضي"
-        } else {
-            editor.putString("high_sound_uri", defaultUriString)
-            binding.txtHighSoundPath.text = "الصوت الافتراضي"
-        }
-        editor.apply()
-    }
 
     private fun setDefaultSound(context: Context, isLowSound: Boolean) {
         val soundResId = if (isLowSound) R.raw.lowbattery else R.raw.lowbattery

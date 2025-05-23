@@ -77,25 +77,26 @@ class BatteryService : Service(), BatteryReceiver.BatteryListener {
 
         val chargeLimit = prefs.getInt("chargeLimit", 80)
         val lowLimit = prefs.getInt("lowBatteryLimit", 20)
-        val rootEnabled = prefs.getBoolean("useRootControl", false)
 
-        if (isCharging && level >= chargeLimit) {
+        val notifyHigh = prefs.getBoolean("notifyHigh", true)
+        val notifyLow = prefs.getBoolean("notifyLow", true)
+
+        if (isCharging && level >= chargeLimit && notifyHigh) {
             sendNotificationWithAction("افصل الشاحن، وصلت النسبة المحددة $level%")
-
             playCustomSound(isMax = true)
-        } else if (!isCharging && level <= lowLimit) {
-            // إشعار واضح مع دعوة لتفعيل توفير الطاقة
+        } else if (!isCharging && level <= lowLimit && notifyLow) {
             sendNotificationWithAction(
                 "⚠️ البطارية منخفضة ($level%)\n" +
                         "يرجى تفعيل وضع توفير الطاقة للحفاظ على عمر البطارية."
             )
             playCustomSound(isMax = false)
-            // فتح شاشة إعدادات توفير الطاقة تلقائيًا
+
             val intent = Intent(android.provider.Settings.ACTION_BATTERY_SAVER_SETTINGS)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
             startActivity(intent)
         }
     }
+
 
 
 
