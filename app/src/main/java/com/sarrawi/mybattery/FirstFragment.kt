@@ -240,7 +240,8 @@ class FirstFragment : Fragment() {
             level >= 20 -> R.drawable.battery_50
             else -> R.drawable.battery_20
         }
-        binding.imgBattery.setImageResource(iconRes)
+        binding.batteryView.batteryLevel = level
+//        binding.imgBattery.setImageResource(iconRes)
         binding.txtBatteryStatus.text = "نسبة البطارية: $level% - ${if (isCharging) "يتم الشحن الآن" else "غير متصل بالشاحن"}"
 
 //        binding.txtBatteryStatus.text = "$level%"
