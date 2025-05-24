@@ -13,6 +13,7 @@ import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -21,6 +22,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.ViewModelProvider
+import com.google.android.gms.ads.*
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.sarrawi.mybattery.databinding.FragmentSettingsBinding
 import com.sarrawi.mybattery.vm.BatteryViewModel
 import com.sarrawi.mybattery.vm.BatteryViewModelFactory
@@ -40,7 +44,8 @@ class SettingsFragment : Fragment() {
     private var pendingRequestCodeForSound: Int? = null // لتخزين أي اختيار صوت بعد الموافقة على الصلاحية
 
     private lateinit var viewModel: BatteryViewModel
-
+    private var clickCount = 0
+    private var mInterstitialAd: InterstitialAd? = null
     private val PICK_LOW_SYSTEM_SOUND = 102
     private val PICK_HIGH_SYSTEM_SOUND = 103
 
@@ -55,6 +60,8 @@ class SettingsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        loadInterstitialAd()
+
         prefs = requireContext().getSharedPreferences("battery_settings", Context.MODE_PRIVATE)
         sharedPrefs = requireContext().getSharedPreferences("BatteryPrefs", Context.MODE_PRIVATE)
 
@@ -79,13 +86,15 @@ class SettingsFragment : Fragment() {
 
         //تحديث القيم في SharedPreferences و ViewModel عند تغير حالة مفاتيح الإشعارات.
         binding.switchNotifyLow.setOnCheckedChangeListener { _, checked ->
+            showAdEvery3Clicks  {
             sharedPrefs.edit().putBoolean("notifyLow", checked).apply()
             viewModel.setNotifyLow(checked)
-        }
+        }}
         binding.switchNotifyHigh.setOnCheckedChangeListener { _, checked ->
+            showAdEvery3Clicks  {
             sharedPrefs.edit().putBoolean("notifyHigh", checked).apply()
             viewModel.setNotifyHigh(checked)
-        }
+        }}
 
 
         // عرض المسارات المحفوظة إذا موجودة
@@ -305,4 +314,63 @@ class SettingsFragment : Fragment() {
         super.onDestroyView()
         _binding = null
     }
+
+
+    private fun showAdEvery3Clicks(action: () -> Unit) {
+        clickCount++
+        if (clickCount % 3 == 0) {
+            showAdThen(action)
+        } else {
+            action()
+        }
+    }
+
+
+    private fun loadInterstitialAd() {
+        MobileAds.initialize(requireActivity()) { initializationStatus ->
+            // do nothing on initialization complete
+        }
+        val adRequest = AdRequest.Builder().build()
+        InterstitialAd.load(requireContext(), "ca-app-pub-1895204889916566/5944841642", adRequest,
+            object : InterstitialAdLoadCallback() {
+                override fun onAdLoaded(interstitialAd: InterstitialAd) {
+                    mInterstitialAd = interstitialAd
+                    Log.i("onAdLoadedL", "onAdLoaded")
+                }
+
+                override fun onAdFailedToLoad(adError: LoadAdError) {
+                    mInterstitialAd = null
+                    Log.d("onAdLoadedF", adError.toString())
+
+                }
+            })
+    }
+
+
+    private fun showAdThen(action: () -> Unit) {
+        if (mInterstitialAd != null) {
+            mInterstitialAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+                    mInterstitialAd = null
+                    loadInterstitialAd()
+                    action()
+                    Log.i("onAdLoadedL", "onAdLoaded")
+                }
+
+                override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                    mInterstitialAd = null
+                    action()
+
+                }
+
+                override fun onAdShowedFullScreenContent() {
+                    mInterstitialAd = null
+                }
+            }
+            mInterstitialAd?.show(requireActivity())
+        } else {
+            action()
+        }
+    }
+
 }

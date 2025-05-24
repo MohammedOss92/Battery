@@ -16,6 +16,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.work.*
+import com.google.android.gms.ads.*
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.sarrawi.mybattery.databinding.FragmentFirstBinding
 import com.sarrawi.mybattery.service.BatteryService
 import com.sarrawi.mybattery.vm.BatteryViewModel
@@ -29,6 +32,8 @@ class FirstFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var viewModel: BatteryViewModel
+    private var clickCount = 0
+    private var mInterstitialAd: InterstitialAd? = null
 
     //تعريف BroadcastReceiver داخلي (anonymous class) يستقبل تحديثات حالة البطارية من النظام.
     //
@@ -63,6 +68,7 @@ class FirstFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val context = requireContext()
+        loadInterstitialAd()
 
         //تحميل ملفي SharedPreferences لحفظ واسترجاع الإعدادات الخاصة بالبطارية.
         //
@@ -168,6 +174,7 @@ class FirstFragment : Fragment() {
         //
         //تحديث نص الزر.
         binding.btnStartService.setOnClickListener {
+            showAdEvery3Clicks  {
             isServiceRunning = !isServiceRunning
             sharedPrefs.edit().putBoolean("service_enabled", isServiceRunning).apply()
 
@@ -184,7 +191,7 @@ class FirstFragment : Fragment() {
                 Toast.makeText(context, "تم إيقاف الخدمة", Toast.LENGTH_SHORT).show()
             }
             updateButtonText(isServiceRunning)
-        }
+        }}
 
 
         //هذه المراقبات تجعل الواجهة تتغير تلقائياً إذا تم تحديث القيم في ViewModel
@@ -216,7 +223,9 @@ class FirstFragment : Fragment() {
         )
 
         binding.button.setOnClickListener {
-            findNavController().navigate(R.id.action_FirstFragment_to_settingsFragment)
+            showAdEvery3Clicks {
+                findNavController().navigate(R.id.action_FirstFragment_to_settingsFragment)
+            }
         }
 
 
@@ -247,6 +256,88 @@ class FirstFragment : Fragment() {
 //        binding.txtBatteryStatus.text = "$level%"
     }
 
+    //    buttonIncrement.setOnClickListener {
+//        count++
+//        textView.text = "عدد الضغطات: $count"
+//    }
+//
+//    buttonReset.setOnClickListener {
+//        count = 0  // إعادة العد للصفر
+//        textView.text = "عدد الضغطات: $count"
+//    }
+
+    //    private: تعني أن هذه الدالة خاصة، أي يمكن استدعاؤها فقط داخل نفس الكلاس (class) أو الملف الذي تم تعريفها فيه، ولا يمكن الوصول إليها من خارج هذا السياق.
+//
+//fun: كلمة مفتاحية لتعريف دالة في كوتلن.
+//
+//as: هذا اسم الدالة. (ملاحظة: as هو كلمة محجوزة في كوتلن، لذلك غالباً هذا مثال تعليمي أو اسم الدالة قد يكون مختلف في الواقع لتجنب تعارضات)
+//
+//(action: () -> Unit): هذا هو المعامل (الباراميتر) الوحيد الذي تأخذه الدالة، وهو عبارة عن دالة بدون معطيات ولا ترجع قيمة (Unit يعني لا يوجد قيمة إرجاع — يشبه void في لغات أخرى).
+//
+//action هو اسم المعامل.
+//
+//() -> Unit نوع هذا المعامل، يعني دالة بدون باراميتر وترجع Unit.
+//الدالة as تأخذ كـ باراميتر دالة أخرى (إجراء أو كود) action وتنفذها داخل جسمها.
+//هي طريقة لتمرير وظيفة (block of code) كمعامل إلى دالة أخرى.
+
+    private fun showAdEvery3Clicks(action: () -> Unit) {
+        clickCount++
+        if (clickCount % 3 == 0) {
+            showAdThen(action)
+        } else {
+            action()
+        }
+    }
+
+
+    private fun loadInterstitialAd() {
+        MobileAds.initialize(requireActivity()) { initializationStatus ->
+            // do nothing on initialization complete
+        }
+        val adRequest = AdRequest.Builder().build()
+        InterstitialAd.load(requireContext(), "ca-app-pub-1895204889916566/5944841642", adRequest,
+            object : InterstitialAdLoadCallback() {
+                override fun onAdLoaded(interstitialAd: InterstitialAd) {
+                    mInterstitialAd = interstitialAd
+                    Log.i("onAdLoadedL", "onAdLoaded")
+                }
+
+                override fun onAdFailedToLoad(adError: LoadAdError) {
+                    mInterstitialAd = null
+                    Log.d("onAdLoadedF", adError.toString())
+
+                }
+            })
+    }
+
+
+    private fun showAdThen(action: () -> Unit) {
+        if (mInterstitialAd != null) {
+            mInterstitialAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+                    mInterstitialAd = null
+                    loadInterstitialAd()
+                    action()
+                    Log.i("onAdLoadedL", "onAdLoaded")
+                }
+
+                override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                    mInterstitialAd = null
+                    action()
+
+                }
+
+                override fun onAdShowedFullScreenContent() {
+                    mInterstitialAd = null
+                }
+            }
+            mInterstitialAd?.show(requireActivity())
+        } else {
+            action()
+        }
+    }
+
+
     override fun onDestroyView() {
         super.onDestroyView()
         try {
@@ -255,7 +346,15 @@ class FirstFragment : Fragment() {
         _binding = null
     }
 
+    //ة (Density)	النسبة (scale)	الأبعاد الشائعة (بالبكسل)
+    //mdpi	1x	320 × 480
+    //hdpi	1.5x	480 × 800
+    //xhdpi	2x	720 × 1280
+    //xxhdpi	3x	960 × 1600
+    //xxxhdpi	4x	1280 × 1920
+
 }
+
 
 
 
