@@ -45,4 +45,18 @@
         android:text="لم يتم اختيار أي ملف"
         android:padding="8dp" />
 
+    <Switch
+        android:id="@+id/switchNotifyLow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
+        android:text="تفعيل إشعار الحد الأدنى" />
+
+    <Switch
+        android:id="@+id/switchNotifyHigh"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
+        android:text="تفعيل إشعار الحد الأعلى" />
+
 </LinearLayout>

@@ -6,6 +6,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.MediaPlayer
@@ -19,7 +20,10 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.lifecycle.ViewModelProvider
 import com.sarrawi.mybattery.databinding.FragmentSettingsBinding
+import com.sarrawi.mybattery.vm.BatteryViewModel
+import com.sarrawi.mybattery.vm.BatteryViewModelFactory
 
 class SettingsFragment : Fragment() {
 
@@ -31,9 +35,11 @@ class SettingsFragment : Fragment() {
     private val REQUEST_CODE_READ_STORAGE = 2001
 
     private lateinit var prefs: android.content.SharedPreferences
+    private lateinit var sharedPrefs: SharedPreferences
 
     private var pendingRequestCodeForSound: Int? = null // لتخزين أي اختيار صوت بعد الموافقة على الصلاحية
 
+    private lateinit var viewModel: BatteryViewModel
 
     private val PICK_LOW_SYSTEM_SOUND = 102
     private val PICK_HIGH_SYSTEM_SOUND = 103
@@ -50,6 +56,37 @@ class SettingsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         prefs = requireContext().getSharedPreferences("battery_settings", Context.MODE_PRIVATE)
+        sharedPrefs = requireContext().getSharedPreferences("BatteryPrefs", Context.MODE_PRIVATE)
+
+
+        val notifyLow = sharedPrefs.getBoolean("notifyLow", false)
+        val notifyHigh = sharedPrefs.getBoolean("notifyHigh", false)
+
+        viewModel = ViewModelProvider(
+            this,
+            BatteryViewModelFactory(requireContext().applicationContext)
+        )[BatteryViewModel::class.java]
+
+        //تحديث الـ ViewModel بالقيم المحفوظة.
+
+        viewModel.setNotifyLow(notifyLow)
+        viewModel.setNotifyHigh(notifyHigh)
+
+
+
+        binding.switchNotifyLow.isChecked = notifyLow
+        binding.switchNotifyHigh.isChecked = notifyHigh
+
+        //تحديث القيم في SharedPreferences و ViewModel عند تغير حالة مفاتيح الإشعارات.
+        binding.switchNotifyLow.setOnCheckedChangeListener { _, checked ->
+            sharedPrefs.edit().putBoolean("notifyLow", checked).apply()
+            viewModel.setNotifyLow(checked)
+        }
+        binding.switchNotifyHigh.setOnCheckedChangeListener { _, checked ->
+            sharedPrefs.edit().putBoolean("notifyHigh", checked).apply()
+            viewModel.setNotifyHigh(checked)
+        }
+
 
         // عرض المسارات المحفوظة إذا موجودة
         binding.txtLowSoundPath.text = prefs.getString("low_sound_uri", "لم يتم اختيار أي ملف")

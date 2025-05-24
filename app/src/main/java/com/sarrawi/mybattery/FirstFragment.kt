@@ -87,8 +87,8 @@ class FirstFragment : Fragment() {
         //notifyLow و notifyHigh هل يجب إرسال إشعارات لهذه الحالات.
         val savedMin = settingsPrefs.getInt("min_level", 20)
         val savedMax = settingsPrefs.getInt("max_level", 80)
-        val notifyLow = sharedPrefs.getBoolean("notifyLow", false)
-        val notifyHigh = sharedPrefs.getBoolean("notifyHigh", false)
+//        val notifyLow = sharedPrefs.getBoolean("notifyLow", false)
+//        val notifyHigh = sharedPrefs.getBoolean("notifyHigh", false)
 
         viewModel = ViewModelProvider(
             this,
@@ -98,23 +98,23 @@ class FirstFragment : Fragment() {
         //تحديث الـ ViewModel بالقيم المحفوظة.
         viewModel.setLowBatteryLimit(savedMin)
         viewModel.setChargeLimit(savedMax)
-        viewModel.setNotifyLow(notifyLow)
-        viewModel.setNotifyHigh(notifyHigh)
+//        viewModel.setNotifyLow(notifyLow)
+//        viewModel.setNotifyHigh(notifyHigh)
 
 
-
-        binding.switchNotifyLow.isChecked = notifyLow
-        binding.switchNotifyHigh.isChecked = notifyHigh
-
-        //تحديث القيم في SharedPreferences و ViewModel عند تغير حالة مفاتيح الإشعارات.
-        binding.switchNotifyLow.setOnCheckedChangeListener { _, checked ->
-            sharedPrefs.edit().putBoolean("notifyLow", checked).apply()
-            viewModel.setNotifyLow(checked)
-        }
-        binding.switchNotifyHigh.setOnCheckedChangeListener { _, checked ->
-            sharedPrefs.edit().putBoolean("notifyHigh", checked).apply()
-            viewModel.setNotifyHigh(checked)
-        }
+//
+//        binding.switchNotifyLow.isChecked = notifyLow
+//        binding.switchNotifyHigh.isChecked = notifyHigh
+//
+//        //تحديث القيم في SharedPreferences و ViewModel عند تغير حالة مفاتيح الإشعارات.
+//        binding.switchNotifyLow.setOnCheckedChangeListener { _, checked ->
+//            sharedPrefs.edit().putBoolean("notifyLow", checked).apply()
+//            viewModel.setNotifyLow(checked)
+//        }
+//        binding.switchNotifyHigh.setOnCheckedChangeListener { _, checked ->
+//            sharedPrefs.edit().putBoolean("notifyHigh", checked).apply()
+//            viewModel.setNotifyHigh(checked)
+//        }
 
 
         //ضبط شريط التمرير (SeekBar) الخاص بأعلى مستوى شحن.

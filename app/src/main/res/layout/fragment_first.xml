@@ -68,26 +68,30 @@
 
 
 
-    <Button android:id="@+id/btnStartService" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="بدء الخدمة"/>
-
-    <Switch
-        android:id="@+id/switchNotifyLow"
+    <Button android:id="@+id/btnStartService"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:minHeight="48dp"
-        android:text="تفعيل إشعار الحد الأدنى" />
+        android:layout_gravity="center"
+        android:text="بدء الخدمة"/>
 
-    <Switch
-        android:id="@+id/switchNotifyHigh"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minHeight="48dp"
-        android:text="تفعيل إشعار الحد الأعلى" />
+<!--    <Switch-->
+<!--        android:id="@+id/switchNotifyLow"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:minHeight="48dp"-->
+<!--        android:text="تفعيل إشعار الحد الأدنى" />-->
+
+<!--    <Switch-->
+<!--        android:id="@+id/switchNotifyHigh"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:minHeight="48dp"-->
+<!--        android:text="تفعيل إشعار الحد الأعلى" />-->
 
     <Button
         android:id="@+id/button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Button" />
+        android:text="Settings" />
 
 </LinearLayout>
